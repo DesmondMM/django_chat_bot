@@ -1,6 +1,8 @@
 import json
 import random
 import re
+import os
+import requests
 from pprint import pprint
 from django.shortcuts import render
 from django.views import generic
@@ -20,7 +22,7 @@ class YoMamaBotView(generic.View):
         return generic.View.dispatch(self, request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        if self.request.GET['hub.verify_token'] == '1065331596':
+        if self.request.GET['hub.verify_token'] == os.getenv('FB_VERIFICATION_KEY'):
             return HttpResponse(self.request.GET['hub.challenge'])
         else:
             return HttpResponse('Error, invalid token')
@@ -28,6 +30,7 @@ class YoMamaBotView(generic.View):
     # Post function to handle Facebook messages
     def post(self, request, *args, **kwargs):
         # Converts the text payload into a python dictionary
+        print('my env {}'.format(os.getenv('FB_VERIFICATION_KEY')))
         incoming_message = json.loads(self.request.body.decode('utf-8'))
         # Facebook recommends going through every entry since they might send
         # multiple messages in a single call during high load
@@ -38,4 +41,14 @@ class YoMamaBotView(generic.View):
                 if 'message' in message:
                     # Print the message to the terminal
                     pprint(message)
+                    # Assuming the sender only sends text. Non-text messages like stickers, audio, pictures
+                    # are sent as attachments and must be handled accordingly.
+                    post_facebook_message(message['sender']['id'], message['message']['text'])
         return HttpResponse()
+
+
+def post_facebook_message(fbid, recevied_message):
+    post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(os.getenv('FB_ACCESS_KEY'))
+    response_msg = json.dumps({"recipient": {"id": fbid}, "message": {"text": recevied_message}})
+    status = requests.post(post_message_url, headers={"Content-Type": "application/json"},data=response_msg)
+    pprint(status.json())
