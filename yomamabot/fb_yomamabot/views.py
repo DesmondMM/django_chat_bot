@@ -65,11 +65,10 @@ def post_facebook_message(fbid, recevied_message):
         if token in jokes:
             joke_text = random.choice(jokes[token])
             break
-    post_message_url = ''
     if not joke_text:
         joke_text = "I didn't understand! Send 'stupid', 'fat', 'dumb' for a Yo Mama joke!"
-        post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
-            os.getenv('FB_ACCESS_KEY'))
+    post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
+        os.getenv('FB_ACCESS_KEY'))
     response_msg = json.dumps({"recipient": {"id": fbid}, "message": {"text": joke_text}})
     status = requests.post(post_message_url, headers={"Content-Type": "application/json"}, data=response_msg)
     pprint(status.json())
